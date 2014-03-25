@@ -1,4 +1,5 @@
 table.panel-primary th, table.panel-primary td {
+  padding: 6pt;
   border: 1px solid #428bca;
 }
 
