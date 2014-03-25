@@ -116,19 +116,21 @@
 
       <h3>Mac OS X</h3>
       <p>Using Macports:</p>
-      <code>
-        sudo port install postgresql93 postgresql93-server postgis2@2.1.1+postgresql93<br />
-        createdb massdrivedata bunzip2 -c massdrivedata-1.0.sql.bz2 | psql93 -d massdrivedata
-      </code>
+      <div class="well">
+        <code>
+sudo port install postgresql93 postgresql93-server postgis2@2.1.1+postgresql93<br />
+createdb massdrivedata bunzip2 -c massdrivedata-1.0.sql.bz2 | psql93 -d massdrivedata
+        </code>
+      </div>
       <p>You may also want to install <a href="http://www.postgresql.org/ftp/pgadmin3/release/v1.18.1/osx/">pgAdmin</a> for a GUI for accessing the database.</p>
 
       <h3>Ubuntu Precise</h3>
       <div class="well">
         <code>
-          sudo add-apt-repository ppa:pitti/postgresql<br />
-          sudo apt-get update<br />
-          sudo apt-get install postgresql-9.3 postgresql-9.3-postgis-2.1<br />
-          sudo -u postgres createdb massdrivedata bunzip2 -c massdrivedata-1.0.sql.bz2 | sudo -c postgres psql -d massdrivedata
+sudo add-apt-repository ppa:pitti/postgresql<br />
+sudo apt-get update<br />
+sudo apt-get install postgresql-9.3 postgresql-9.3-postgis-2.1<br />
+sudo -u postgres createdb massdrivedata bunzip2 -c massdrivedata-1.0.sql.bz2 | sudo -c postgres psql -d massdrivedata
         </code>
       </div>
 
