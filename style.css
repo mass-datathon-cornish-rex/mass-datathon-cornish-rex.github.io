@@ -1,0 +1,14 @@
+table.panel-primary th, table.panel-primary td {
+  border: 1px solid #428bca;
+}
+
+table.panel-primary th {
+  /* copied from .panel-heading */
+  color: #fff;
+  background-color: #428bca;
+  border-color: #428bca;
+  text-align: center;
+  background-image: linear-gradient(to bottom,#428bca 0,#357ebd 100%);
+  background-repeat: repeat-x;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff428bca', endColorstr='#ff357ebd', GradientType=0);
+}
