@@ -21,7 +21,7 @@
     <![endif]-->
   </head>
   <body role="document">
-    <div class="navbar nvarbar-inverse navbar-fixed-top" role="navigation">
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container">
         <div class="navbar-header">
           <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -43,109 +43,109 @@
         </div>
       </div>
     </div>
+    <div class="container" role="main">
+      <div class="page-header">
+        <a name=""></a><h1>Welcome!</h1>
+      </div>
 
-    <div class="page-header">
-      <a name=""></a><h1>Welcome!</h1>
+      <p>Welcome to the future home of Team Cornish Rex's submission for the 37 Billion Mile Challenge. We're still under construction, but check back occassionally as we update this space to include demonstrations and discussions of various transportation-related datasets.</p>
+
+      <div class="page-header">
+        <a name="about"></a><h1>About</h1>
+      </div>
+
+      <p>
+        We are a group of developers, designers, data nerds, and transportation enthusiasts interested in using data to make a difference to Massachusetts residents. Formed at the 37 Billion Miles Datathon held in Boston, MA in March of 2014, we are looking to bring together different datasets using an open-source process to build compelling data-driven visualizations to help residents and policy makers get a better grasp on the state's driving habits and how this information can be used to improve the quality of life for the citizens of the Commonwealth.
+      </p>
+
+      <div class="page-header">
+        <a name="data-access"></a><h1>Data Access</h1>
+      </div>
+
+      <p>Current Release</p>
+      <table>
+        <tr><th>File</th><th>Size</th><th>MD5</th>
+        <tr><td><a href="http://www.evanpatton.com/projects/massdrive/massdrivedata-1.0.sql.bz2">massdrivedata-1.0.sql.bz2</a></td><td>533 MB</td><td>0f8dc5f709cc92f3ee640b496098249c</td></tr>
+        <tr><td><a href="https://github.com/mass-datathon-cornish-rex/data/wiki/massdrive_schema-1.0.svg">Schema Diagram (SVG)</td><td>256 KB</td><td>7c4583de23e2babbbad3163dff238d51</td></tr>
+      </table>
+
+      <h2>Requirements</h2>
+      <ul>
+        <li>PostgreSQL 9.3.4</li>
+        <li>PostGIS 2.1</li>
+        <li>5.7 GB Disk Space</li>
+        <li>1 GB RAM (possibly less)</li>
+      </ul>
+
+      <h2>Release Notes</h2>
+      <ul>
+        <li>Version 1.0
+          <ul>
+            <li>Converted ERSI Shape file into PostGIS geometry</li>
+            <li>Created model_year table to aggregate years into a smaller table</li>
+            <li>Created make table to aggregate car manufacturers into a singlular table</li>
+            <li>Created model table to aggregate car manufacturer/model pairs into a singular table</li>
+            <li>Created vehicle table to differentiate vehicles appearing in more than one Regulation and Emissions records</li>
+            <li>Created municipality table from grid_250m_shape table</li>
+            <li>Added foreign key relationships between different tables</li>
+            <li>Added indices for make/model names, VINs, muni_ids, g250m_ids</li>
+            <li>Installation instructions</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h2>Installation Instructions</h2>
+      <p>These instructions have not been fully vetted, so use at your own risk.</p>
+      <h3>Windows</h3>
+      <ol>
+        <li>Download Postgres 9.3.4 from <a href="http://www.enterprisedb.com/products-services-training/pgdownload#windows">EnterpriseDB</a>.</li>
+        <li>Download PostGIS 2.1.1 from <a href="http://download.osgeo.org/postgis/windows/pg93/">OSGeo</a>.</li>
+        <li>Install Postgres using the installer.</li>
+        <li>Install PostGIS using the installer.</li>
+        <li>Launch pgAdmin III from the Start Menu.</li>
+        <li>Select the PostgreSQL server instance and click the Connect button. Enter the password you set during installation.</li>
+        <li>From the Edit menu, select New Object &gt; New Database...</li>
+        <li>Enter a name for the database, e.g. massdrivedata.</li>
+        <li>Set the owner to postgres.</li>
+        <li>Close pgAdmin.</li>
+        <li>Launch SQL Shell (psql) from the Start Menu.</li>
+        <li>Log in to your newly created database.</li>
+        <li>Load the SQL file using the \i command: \i C:/path/to/downloaded/data.sql</li>
+        <li>To quit, type \q</li>
+      </ol>
+
+      <h3>Mac OS X</h3>
+      <p>Using Macports:</p>
+      <code>
+        sudo port install postgresql93 postgresql93-server postgis2@2.1.1+postgresql93<br />
+        createdb massdrivedata bunzip2 -c massdrivedata-1.0.sql.bz2 | psql93 -d massdrivedata
+      </code>
+      <p>You may also want to install <a href="http://www.postgresql.org/ftp/pgadmin3/release/v1.18.1/osx/">pgAdmin</a> for a GUI for accessing the database.</p>
+
+      <h3>Ubuntu Precise</h3>
+      <div class="well">
+        <code>
+          sudo add-apt-repository ppa:pitti/postgresql<br />
+          sudo apt-get update<br />
+          sudo apt-get install postgresql-9.3 postgresql-9.3-postgis-2.1<br />
+          sudo -u postgres createdb massdrivedata bunzip2 -c massdrivedata-1.0.sql.bz2 | sudo -c postgres psql -d massdrivedata
+        </code>
+      </div>
+
+      <!--<p>Previous Releases</p>-->
+
+      <div class="page-header">
+        <a name="demo-showcase"></a><h1>Demo Showcase</h1>
+      </div>
+
+      <p>Coming soon!</p>
+
+      <div class="page-header">
+        <a name="contact"></a><h1>Contact</h1>
+      </div>
+
+      <p>Coming soon!</p>
     </div>
-
-    <p>Welcome to the future home of Team Cornish Rex's submission for the 37 Billion Mile Challenge. We're still under construction, but check back occassionally as we update this space to include demonstrations and discussions of various transportation-related datasets.</p>
-
-    <div class="page-header">
-      <a name="about"></a><h1>About</h1>
-    </div>
-
-    <p>
-      We are a group of developers, designers, data nerds, and transportation enthusiasts interested in using data to make a difference to Massachusetts residents. Formed at the 37 Billion Miles Datathon held in Boston, MA in March of 2014, we are looking to bring together different datasets using an open-source process to build compelling data-driven visualizations to help residents and policy makers get a better grasp on the state's driving habits and how this information can be used to improve the quality of life for the citizens of the Commonwealth.
-    </p>
-
-    <div class="page-header">
-      <a name="data-access"></a><h1>Data Access</h1>
-    </div>
-
-    <p>Current Release</p>
-    <table>
-      <tr><th>File</th><th>Size</th><th>MD5</th>
-      <tr><td><a href="http://www.evanpatton.com/projects/massdrive/massdrivedata-1.0.sql.bz2">massdrivedata-1.0.sql.bz2</a></td><td>533 MB</td><td>0f8dc5f709cc92f3ee640b496098249c</td></tr>
-      <tr><td><a href="https://github.com/mass-datathon-cornish-rex/data/wiki/massdrive_schema-1.0.svg">Schema Diagram (SVG)</td><td>256 KB</td><td>7c4583de23e2babbbad3163dff238d51</td></tr>
-    </table>
-
-    <h2>Requirements</h2>
-    <ul>
-      <li>PostgreSQL 9.3.4</li>
-      <li>PostGIS 2.1</li>
-      <li>5.7 GB Disk Space</li>
-      <li>1 GB RAM (possibly less)</li>
-    </ul>
-
-    <h2>Release Notes</h2>
-    <ul>
-      <li>Version 1.0
-        <ul>
-          <li>Converted ERSI Shape file into PostGIS geometry</li>
-          <li>Created model_year table to aggregate years into a smaller table</li>
-          <li>Created make table to aggregate car manufacturers into a singlular table</li>
-          <li>Created model table to aggregate car manufacturer/model pairs into a singular table</li>
-          <li>Created vehicle table to differentiate vehicles appearing in more than one Regulation and Emissions records</li>
-          <li>Created municipality table from grid_250m_shape table</li>
-          <li>Added foreign key relationships between different tables</li>
-          <li>Added indices for make/model names, VINs, muni_ids, g250m_ids</li>
-          <li>Installation instructions</li>
-        </ul>
-      </li>
-    </ul>
-
-    <h2>Installation Instructions</h2>
-    <p>These instructions have not been fully vetted, so use at your own risk.</p>
-    <h3>Windows</h3>
-    <ol>
-      <li>Download Postgres 9.3.4 from <a href="http://www.enterprisedb.com/products-services-training/pgdownload#windows">EnterpriseDB</a>.</li>
-      <li>Download PostGIS 2.1.1 from <a href="http://download.osgeo.org/postgis/windows/pg93/">OSGeo</a>.</li>
-      <li>Install Postgres using the installer.</li>
-      <li>Install PostGIS using the installer.</li>
-      <li>Launch pgAdmin III from the Start Menu.</li>
-      <li>Select the PostgreSQL server instance and click the Connect button. Enter the password you set during installation.</li>
-      <li>From the Edit menu, select New Object &gt; New Database...</li>
-      <li>Enter a name for the database, e.g. massdrivedata.</li>
-      <li>Set the owner to postgres.</li>
-      <li>Close pgAdmin.</li>
-      <li>Launch SQL Shell (psql) from the Start Menu.</li>
-      <li>Log in to your newly created database.</li>
-      <li>Load the SQL file using the \i command: \i C:/path/to/downloaded/data.sql</li>
-      <li>To quit, type \q</li>
-    </ol>
-
-    <h3>Mac OS X</h3>
-    <p>Using Macports:</p>
-    <code>
-sudo port install postgresql93 postgresql93-server postgis2@2.1.1+postgresql93<br />
-createdb massdrivedata bunzip2 -c massdrivedata-1.0.sql.bz2 | psql93 -d massdrivedata
-    </code>
-    <p>You may also want to install <a href="http://www.postgresql.org/ftp/pgadmin3/release/v1.18.1/osx/">pgAdmin</a> for a GUI for accessing the database.</p>
-
-    <h3>Ubuntu Precise</h3>
-    <div class="well">
-    <code>
-sudo add-apt-repository ppa:pitti/postgresql<br />
-sudo apt-get update<br />
-sudo apt-get install postgresql-9.3 postgresql-9.3-postgis-2.1<br />
-sudo -u postgres createdb massdrivedata bunzip2 -c massdrivedata-1.0.sql.bz2 | sudo -c postgres psql -d massdrivedata
-    </code>
-    </div>
-
-    <!--<p>Previous Releases</p>-->
-
-    <div class="page-header">
-      <a name="demo-showcase"></a><h1>Demo Showcase</h1>
-    </div>
-
-    <p>Coming soon!</p>
-
-    <div class="page-header">
-      <a name="contact"></a><h1>Contact</h1>
-    </div>
-
-    <p>Coming soon!</p>
-
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
   </body>
