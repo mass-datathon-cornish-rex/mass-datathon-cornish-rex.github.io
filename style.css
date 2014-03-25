@@ -13,3 +13,7 @@ table.panel-primary th {
   background-repeat: repeat-x;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff428bca', endColorstr='#ff357ebd', GradientType=0);
 }
+
+div[role='main'] {
+  clear: both;
+}
