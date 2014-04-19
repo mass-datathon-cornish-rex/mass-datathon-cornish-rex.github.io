@@ -283,6 +283,11 @@
 						'<td>Commercial Vehicles: '+ numVehicles[1].value +'</td></tr></table>';					
 					}
 
+					// Initial charts
+					var firstFeature = data.features[0].properties;
+					updateAvgMiles(firstFeature);
+					updateTotalVehicles(firstFeature);		
+
 					function featureClicked(e) { 
 						var props = e.target.feature.properties;	
 						updateAvgMiles(props);
