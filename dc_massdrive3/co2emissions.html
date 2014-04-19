@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+
+		<title>Co2 Emissions</title>
+		<!-- <link rel="stylesheet" type="text/css" href="css/dc.css"/> -->
+		<!-- <link rel="stylesheet" type="text/css" href="css/styles.css"/> -->
+		<link rel="stylesheet" type="text/css" href="css/leaflet.css"/>
+		<link rel="stylesheet" type="text/css" href="css/colorbrewer.css"/>
+		<script type="text/javascript" src="lib/d3.min-3-4-5.js"></script>
+		<script type="text/javascript" src="lib/topojson.js"></script>
+		<script type="text/javascript" src="lib/leaflet.js"></script>
+		<script type="text/javascript" src="lib/crossfilter.js"></script>
+		<script type="text/javascript" src="lib/dc.js"></script>
+		<script type="text/javascript" src="lib/colorbrewer.js"></script>
+		<script type="text/javascript" src="lib/Chart.js"></script>
+		<script type="text/javascript" src="lib/jquery-1.10.2.js"></script>
+	    <style>
+		
+			path {
+				stroke-width: 1.25px;
+			}
+		
+			path:hover {
+				fill-opacity: 0.5;
+				stroke: #efefef;
+				stroke-width: 3px;
+			}
+		
+			#map {
+			  width: 1000px;
+			  height: 880px;
+			}
+
+			#mapcontainer {
+				float:left;
+			}
+			
+			.info {
+				padding: 6px 8px;
+				font: 12px Arial, Helvetica, sans-serif;
+				background: white;
+				background: rgba(255,255,255,0.8);
+				box-shadow: 0 0 15px rgba(0,0,0,0.2);
+				border-radius: 5px;
+				width: 250px;
+			}
+			.info h4 {
+				margin: 0 0 5px;
+				color: #777;
+			}		
+
+			.legend {
+				line-height: 18px;
+				color: #555;
+				width: 140px
+			}
+			.legend i {
+				width: 18px;
+				height: 18px;
+				float: left;
+				margin-right: 8px;
+				opacity: 0.7;
+			}			
+			.detailedInfo h3{
+				font: 12px Arial, Helvetica, sans-serif;
+				font-weight: bold;
+			}
+			.detailedInfo div{
+				font: 10px Arial, Helvetica, sans-serif;				
+			}
+		</style>
+	</head>
+	<body>
+		<!-- <table align="center" >  
+		<tr align="center" > 
+		<td rowspan="3"> -->
+		<div id='mapcontainer'>
+			Click on a square region to view info
+			<p id="map">
+		</div>
+		<table class='detailedInfo'>
+			<tr><th><h3>Average Vehicles Miles per Day</h3></th></tr>
+			<tr><td><canvas id="avgMilesPassVsComm"></canvas></td>
+				<td><div id="avgMilesPassVsCommDes"></div></td>
+			</tr>
+			<tr><th><h3>Passenger vs Commercial Vehicles</h3></th></tr>
+			<tr><td><canvas id="numVehicles"></canvas></td>
+				<td><div id="numVehiclesDes"></div></td>
+			</tr>
+		</table>
+		<script type="text/javascript">
+			var width = 600;
+			var height = 520;
+			var commaformat = d3.format("0,000");
+			var hexformat = d3.format("06X");
+
+			var osmUrl = 'http://a{s}.acetate.geoiq.com/tiles/acetate-hillshading/{z}/{x}/{y}.png';
+			var osmAttrib='&copy;2012 Esri & Stamen, Data from OSM and Natural Earth contributers';
+			var map = L.map('map').setView([42.334565,-71.035459], 12);
+			L.tileLayer(osmUrl, {attribution: osmAttrib}).addTo(map);
+			
+			d3.json("co2emissions_top1000.geojson", function(data) {		
+
+				var feature;
+				var geo_tj;
+
+					geojson_tj = L.geoJson(data, {
+						onEachFeature: onEachFeature,
+						style: featureStyle
+					}).addTo(map);
+								
+					var selectionInfo = L.control();
+					selectionInfo.setPosition('bottomright');
+					selectionInfo.onAdd = function (map) {
+						this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+						this.update();
+						return this._div;
+					};
+
+					// Control to hold a table of information about the moused-over zipcode
+					selectionInfo.update = function (props) {	
+						if (currentSelectedLayer != null) return;
+						this._div.innerHTML = (props ?
+						'<table>'+
+						'<tr><td width="140"><b>CO2 Emissions:</b></td><td><b>'+ props.co2eqv_day +' kg/day</b></td></tr>' +
+						'<tr><td width="140"><b>Total Vehicles:</b></td><td><b>'+ props.veh_tot +'</b></td></tr>' +
+						'<tr><td width="140"><b>Passenger Vehicles:</b></td><td><b>'+ props.pass_veh +'</b></td></tr>' +
+						'<tr><td width="140"><b>Commercial Vehicles:</b></td><td><b>'+ props.comm_veh +'</b></td></tr>' +
+						'<tr><td width="140"><b>Commercial Veh. Miles:</b></td><td><b>'+ props.mipdaycomm +' mi/day</b></td></tr>' +
+						'<tr><td width="140"><b>Passenger Veh. Miles:</b></td><td><b>'+ props.mipdaypass +' mi/day</b></td></tr>' +
+						'<tr><td width="140"><b>Number of Households:</b></td><td><b>'+ props.hh10 +'</b></td></tr>' + 
+						'<tr><td width="140"><b>Passenger Veh. Household:</b></td><td><b>'+ props.veh_phh +'</b></td></tr>' + 
+						'</table>'
+						: 'Hover over a zip code region');
+					};
+
+					selectionInfo.addTo(map);
+					
+					function getColor(co2) {
+						var co2values = [0, 4000, 4200, 4400, 4600, 4800, 5000, 10000];						
+						var colors = [];
+						for (var i = 0, l = co2values.length; i < l; ++i) {							
+							var colorDec = [Math.floor((255*(l-i))/l), Math.floor((255*i)/l), 0];
+							if ( i > l/2) {
+								colorDec[2] = 255 * (i - l/2)/(l/2);
+							} else {
+								colorDec[2] = 255 * ((l/2 - i)/(l/2));
+							}
+							colorDec[2] = Math.floor(colorDec[2]);
+
+							var colorHex = colorDec.map(function (c1){
+								var c = 255- c1;
+								var cString = c.toString(16);
+								if (cString.length < 2) {
+									cString = '0' + cString[0];
+								}
+								return cString;
+							});
+							var colorStr = '#' + colorHex[0] + colorHex[1] + colorHex[2];							
+							colors.push(colorStr);
+						}
+						var currColor = colors[0];
+						for (var j = 0; j < l; ++j){
+							if (co2 > co2values[j]) {
+								if (j === (l-1)) {
+									currColor = colors[j];
+								} else if (co2 < co2values[j + 1]){
+									currColor = colors[j + 1];
+									break;
+								}
+							}
+						}
+						return currColor;
+					}
+					
+					// Add legend 
+					var legend = L.control({position: 'topright'});
+
+					legend.onAdd = function (map) {
+
+						var div = L.DomUtil.create('div', 'info legend');
+						var co2values = [0, 4000, 4200, 4400, 4600, 4800, 5000, 10000];		
+						var labels = [];
+
+						div.innerHTML += '<h3>CO2 Emmissions (kg)</h3>';						
+						// generate a label with a colored square for each interval
+						for (var i = 0; i < co2values.length; i++) {
+							div.innerHTML +=								
+								'<span style="float:right">'+commaformat(co2values[i]) + (co2values[i + 1] ? ' - ' + commaformat(co2values[i + 1]) : '+') + '</span>'
+								+'<div style="background:' + getColor(co2values[i] + 1) + ';width:18px;height:18px;"></div>';
+						}
+						
+						return div;
+					};
+
+					legend.addTo(map);					
+				
+					
+					function featureStyle(feature) {						
+						return {							
+							fillColor: getColor(parseFloat(feature.properties.co2eqv_day)),
+							weight: 2,
+							opacity: 1,
+							//color: 'white',
+							dashArray: '3',
+							fillOpacity: 0.7,
+							color: getColor(+feature.properties.co2eqv_day)
+						};
+					}
+					function onEachFeature(feature, layer) {
+
+					    layer.on({
+					        mouseover: highlightFeature,
+							click: featureClicked
+					    });
+					}
+					
+					function highlightFeature(e) {
+						var layer = e.target;
+						selectionInfo.update(layer.feature.properties);
+					}
+					
+					var currentSelectedLayer = null;
+
+					function updateAvgMiles (props) {
+											
+						var vehicles = [
+							{'value': parseFloat(props.mipdaypass), color: 'rgb(49,130,189)'},
+							{'value': parseFloat(props.mipdaycomm), color: 'rgb(107,174,214)'}
+						];
+						avgMilesPassVsCommCanvas = document.getElementById("avgMilesPassVsComm");
+						var parentNode = avgMilesPassVsCommCanvas.parentNode;
+						if (avgMilesPassVsCommCanvas !== null || typeof avgMilesPassVsCommCanvas === 'undefined') {
+							parentNode.removeChild(avgMilesPassVsCommCanvas);
+						}
+						avgMilesPassVsCommCanvas = document.createElement('canvas');
+						avgMilesPassVsCommCanvas.id = 'avgMilesPassVsComm';
+						parentNode.appendChild(avgMilesPassVsCommCanvas);
+
+						var ctx = avgMilesPassVsCommCanvas.getContext("2d");
+						var pieChart = new Chart(ctx).Pie(vehicles);
+						var descDiv = document.getElementById("avgMilesPassVsCommDes");
+
+						descDiv.innerHTML = 
+						'<table><tr colspan=2>Total Miles: '+ vehicles[0].value + vehicles[1].value +'</tr>' +
+						'<tr><td style="background:' + vehicles[0].color + ';width:18px;height:18px;"></td>' +
+						'<td>Passenger Vehicles: '+ vehicles[0].value +'mi/day</td></tr>' + 
+						'<tr><td style="background:' + vehicles[1].color + ';width:18px;height:18px;"></td>' +
+						'<td>Commercial Vehicles: '+ vehicles[1].value +'mi/day</td></tr></table>';
+					}  
+
+					function updateTotalVehicles(props) {
+						var numVehicles = [
+							{'value': parseFloat(props.pass_veh), color: 'rgb(49,130,189)'},
+							{'value': parseFloat(props.comm_veh), color: 'rgb(107,174,214)'}
+						];
+						numVehiclesCanvas = document.getElementById("numVehicles");
+						var parentNode2 = numVehiclesCanvas.parentNode;
+						if (numVehiclesCanvas !== null || typeof numVehiclesCanvas === 'undefined') {
+							parentNode2.removeChild(numVehiclesCanvas);
+						}
+						numVehiclesCanvas = document.createElement('canvas');
+						numVehiclesCanvas.id = 'numVehicles';
+						parentNode2.appendChild(numVehiclesCanvas);
+
+						var ctx2 = numVehiclesCanvas.getContext("2d");
+						var pieChart2 = new Chart(ctx2).Pie(numVehicles);
+						var descDiv2 = document.getElementById("numVehiclesDes");
+
+						descDiv2.innerHTML = 
+						'<table><tr colspan=2>Total Vehicles: '+ props.veh_tot+'</tr>' +
+						'<tr><td style="background:' + numVehicles[0].color + ';width:18px;height:18px;"></td>' +
+						'<td>Passenger Vehicles: '+ numVehicles[0].value +'</td></tr>' + 
+						'<tr><td style="background:' + numVehicles[1].color + ';width:18px;height:18px;"></td>' +
+						'<td>Commercial Vehicles: '+ numVehicles[1].value +'</td></tr></table>';					
+					}
+
+					function featureClicked(e) { 
+						var props = e.target.feature.properties;	
+						updateAvgMiles(props);
+						updateTotalVehicles(props);							
+					}     
+			});
+			
+		</script>
+	</body>
+</html>
