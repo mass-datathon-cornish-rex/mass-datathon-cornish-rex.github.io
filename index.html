@@ -10,6 +10,8 @@
     <title>37 Billion Miles Challenge</title>
 
     <!-- Bootstrap core CSS -->
+    <link href="dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="dist/css/bootstrap-theme.min.css" rel="stylesheet" />
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet" />
     <!-- Bootstrap theme -->
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css" rel="stylesheet" />
@@ -36,6 +38,7 @@
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
             <li class="active"><a href="#">Home</a></li>
+            <li><a href="#impact">Who Impacts Whom?</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#data-access">Data Access</a></li>
             <li><a href="#demo-showcase">Demo Showcase</a></li>
@@ -49,7 +52,86 @@
         <a name=""></a><h1>Welcome!</h1>
       </div>
 
-      <p>Welcome to the future home of Team Cornish Rex's submission for the 37 Billion Mile Challenge. We're still under construction, but check back occassionally as we update this space to include demonstrations and discussions of various transportation-related datasets.</p>
+      <p>Have you ever wondered anything about cars and traffic? For the first time **ever**, a state has released information on all of the cars registered in the state. The Massachusetts Vehicle Census combines detailed (but anonymized) data from the Massachusetts Registry of Motor Vehicles and vehicle safety inspections as part of the <a href="http://www.37billionmilechallenge.org/">37 Billion Mile Challenge</a>.</p>
+      <p>We develop tools and visualizations to explore this data, and hope that you will have as much fun using the data as we had putting the tools together. To go to a specific section in this webpage, click a link below.</p>
+      <ul>
+        <li><a href="dc_massdrive3/dc_massdrive_BOSTON.html">Boston Car Data Explorer</a>: How does your driving compare to that of other people in your neighborhood? Did the car use in your zip code change between 2008 and 2011? How does driving in your zip code compare to that in other zip codes in Boston? The Boston Car Explorer lets you explore these questions and more.</li>
+        <li><a href="#">Who is impacted by whom?</a>: Traffic is related to air pollution, noise, and congestion. Which areas in the Boston metropolitan area have more traffic relative to the amount of driving done by cars registered in those areas? Which areas have cars that drive a lot, but don’t have much total traffic?</li>
+        <!--<p>[Kartik’s Plots]:</p>-->
+        <li><a href="#">The Data</a>: Do you want to download the data and work with it yourself? Go here to see documentation, download the database, and find sample code to get started using the data.</li>
+        <li><a href="#about">About Us</a>: We are a group of developers, designers, data nerds, and transportation enthusiasts interested in using data to make a difference to Massachusetts residents. Formed at the 37 Billion Miles Datathon held in Boston, MA in March of 2014, we are looking to bring together different datasets using an open-source process to build compelling data-driven visualizations to help residents and policy makers get a better grasp on the state's driving habits and how this information can be used to improve the quality of life for the citizens of the Commonwealth.</li>
+      </ul>
+
+      <div class="page-header">
+        <a name="impact"></a><h1>Who is impacted by Whom?</h1>
+      </div>
+
+      <p>
+        Traffic is related to air pollution, noise, and congestion. Which areas in the Boston metropolitan area have more traffic relative to the amount of driving done by cars registered in those areas? Which areas have cars that drive a lot, but don’t have much total traffic?Traffic is related to air pollution, noise, and congestion. Which areas in the Boston metropolitan area have more traffic relative to the amount of driving done by cars registered in those areas? Which areas have cars that drive a lot, but don’t have much total traffic?
+      </p>
+      <p>
+        These maps compare the total miles traveled by locally registered vehicles to the total miles traveled. Red areas are highly impacted by region traffic. Not surprisingly, these areas are mainly along the interstate highways. Blue areas have cars with a lot of miles driven, but have relatively little traffic themselves. These areas tend to be outside of Boston and in areas with a lot of commuting. Can you find your city on the map? Is your community highly impacted, or is it affecting others?
+      </p>
+
+      <p class="text-center">
+        <a href="impact.png"><img src="impact.png" width="50%" /></a><br/>
+        <small>Click the image above to see full size</small>
+      </p>
+
+      <div class="page-header">
+        <h3>Making of the Image</h3>
+      </div>
+
+      <p>This image of the vehicle miles traveled (VMT) divided by total miles per day in each traffic analysis zone (TAZ) highlights the inequality between places with more vehicle traffic and places where the registered cars drive more miles. Near-highway areas and the Boston metropolitan area pop out as places with exceptionally high traffic volumes and low driving.</p>
+
+      <p>Traffic due to passenger vehicles in each TAZ was obtained from grid_quarters_public (mipdaypass). Each grid was assigned to the TAZ which had the highest spatial overlap. TAZ and VMT layers were obtained through CTPS. The image was produced in QGIS.</p>
+
+      <code>
+# R code to generate the figure.<br/>
+library(RPostgreSQL)<br/>
+# Start Driver<br/>
+drv = dbDriver("PostgreSQL")<br/>
+<br/>
+# new connection<br/>
+con <- dbConnect(drv, user="massdrive",dbname="massdrivedata")<br/>
+<br/>
+# rs <- dbSendQuery(con,"select mipdaypass from grid_quarters_public")<br/>
+# mipdaypass = fetch(rs,n=-1)$mipdaypass<br/>
+# dbClearResult(rs)<br/>
+<br/>
+members <- dbSendQuery(con,"select g250m_id,taz_id from g250m_taz_membership")<br/>
+members = fetch(members,n=-1)<br/>
+# dbClearResult(members)<br/>
+<br/>
+mipdaypass <- dbSendQuery(con,"select g250m_id,mipdaypass from grid_quarters_public where quarter = '2010_q2'")<br/>
+mipdaypass = fetch(mipdaypass,n=-1)<br/>
+# dbClearResult(mipdaypass)<br/>
+<br/>
+taz_data_2010 <- dbSendQuery(con,"select taz_id,vmt from taz_data_2010")<br/>
+taz_data_2010 = fetch(taz_data_2010,n=-1)<br/>
+# dbClearResult(taz_data_2010)<br/>
+<br/>
+# Merge by grid miles per day to TAZ-grid membership table<br/>
+temp1 <- merge(members,mipdaypass,by="g250m_id")<br/>
+<br/>
+# Aggregate grid to TAZ level<br/>
+gridtotaz = aggregate(temp1$mipdaypass,by=list(temp1$taz_id),sum,na.rm=F)<br/>
+names(gridtotaz) = c("taz_id","mipdaypass")<br/>
+<br/>
+# Merge aggregated grid data to TAZ data<br/>
+temp2 <- merge(gridtotaz,taz_data_2010,by = "taz_id")<br/>
+temp2$ratio = ifelse(temp2$mipdaypass>0,temp2$vmt/temp2$mipdaypass,NA)<br/>
+<br/>
+# write to csv file<br/>
+write.csv(subset(temp2,!is.na(ratio)),"ratio2.csv",row.names=F)<br/>
+<br/>
+<br/>
+## Closes the connection<br/>
+dbDisconnect(con)<br/>
+<br/>
+## Frees all the resources on the driver<br/>
+dbUnloadDriver(drv)<br/>
+      </code>
 
       <div class="page-header">
         <a name="about"></a><h1>About</h1>
@@ -111,7 +193,9 @@
         <li>Close pgAdmin.</li>
         <li>Launch SQL Shell (psql) from the Start Menu.</li>
         <li>Log in to your newly created database.</li>
-        <li>Load the SQL file using the \i command: \i C:/path/to/downloaded/data.sql</li>
+        <li>Load the SQL file using the \i command: \i <em>C:/path/to/downloaded/data.sql</em> .
+          <ul><li>Note: This step may take several hours depending on the speed of your machine.</li></ul>
+        </li>
         <li>To quit, type \q</li>
       </ol>
 
@@ -141,13 +225,19 @@ sudo -u postgres createdb massdrivedata bunzip2 -c massdrivedata-1.0.sql.bz2 | s
         <a name="demo-showcase"></a><h1>Demo Showcase</h1>
       </div>
 
-      <p>Coming soon!</p>
+      <h3>Mileage Ratios</h3>
+      <p>
+        <img src="mileage_ratios.png" />
+        Allison provides content here.
+      </p>
 
       <div class="page-header">
         <a name="contact"></a><h1>Contact</h1>
       </div>
 
-      <p>Coming soon!</p>
+      <p>If you have any questions about the datasets we've generated, please feel free to
+      contact us via our <a href="https://groups.google.com/forum/#!forum/team-cornish-rex">
+          Google Groups</a> page.</p>
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>

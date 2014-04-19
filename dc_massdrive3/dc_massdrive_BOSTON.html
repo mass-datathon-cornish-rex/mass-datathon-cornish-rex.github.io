@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Boston Car Data Explorer</title>
+    <link rel="stylesheet" type="text/css" href="css/dc.css"/>
+    <link rel="stylesheet" type="text/css" href="css/styles.css"/>
+    <link rel="stylesheet" type="text/css" href="css/colorbrewer.css"/>
+	<link rel="stylesheet" type="text/css" href="css/leaflet.css"/>
+    <!--<script type="text/javascript" src="lib/d3.js"></script>-->
+		<script type="text/javascript" src="lib/d3.min-3-4-5.js"></script>
+		<script type="text/javascript" src="lib/topojson.js"></script>
+		<script type="text/javascript" src="lib/leaflet.js"></script>	
+    <script type="text/javascript" src="lib/crossfilter.js"></script>
+    <script type="text/javascript" src="lib/dc.js"></script>
+    <script type="text/javascript" src="lib/colorbrewer.js"></script>
+    <script>
+        var mainBubbleChart, muniNameBarChart, makeNameBarChart, hybridBarChart, vehTypeBarChart, fuelBarChart, yearBarChart, yearRangeSelectorBarChart;
+		// Page can be reloaded with a query parameter such as "year=2011" to load the .csv file for that year.
+		function reloadPage(select_elt) {
+			console.log(select_elt);
+			var csv_year = select_elt.options[select_elt.selectedIndex].text;
+			var newpage = "http://" + window.location.host + window.location.pathname + '?year='+csv_year;
+			console.log(newpage);
+			window.location.href = newpage;
+		}
+    </script>		
+    <style>
+    .filter, .filterLabel {font-size: 12px}
+    .filterHeader {font-weight: bold; font-size: 16px}
+			path {
+				stroke-width: 1.25px;
+			}
+			path:hover {
+				//fill-opacity: 0.0;
+				stroke: #f00;
+				stroke-width: 3px;
+			}
+		
+			#map {
+			  width: 600px;
+			  height: 520px;
+			}
+			
+			.info {
+				padding: 6px 8px;
+				font: 12px Arial, Helvetica, sans-serif;
+				background: white;
+				background: rgba(255,255,255,0.8);
+				box-shadow: 0 0 15px rgba(0,0,0,0.2);
+				border-radius: 5px;
+				width: 230px;
+			}
+			.info h4 {
+				margin: 0 0 5px;
+				color: #777;
+			}		
+
+			.legend {
+				line-height: 18px;
+				color: #555;
+				width: 140px
+			}
+			.legend i {
+				width: 18px;
+				height: 18px;
+				float: left;
+				margin-right: 8px;
+				opacity: 0.7;
+			}		
+    </style>
+</head>
+
+<!-- 
+Note: even though this is limited to just BOSTON and 2010, it creates a 23.9MB export from PostgreSQL.
+That's way too big for any deployment, but fine for experimenting. I often use a copy with just the first 1000 rows.
+select record_id,
+    -- DIMENSIONS
+    m.muni_name, v.hybrid, v.veh_type, v.fuel, my.year, mk.make_name, 
+    r.q1_2010, r.q2_2010, r.q3_2010, r.q4_2010,
+    -- MEASURES
+    r.mi_per_day, r.mpg_adj, r.gal_perday, r.co2eqv_day, v.curbwt, v.msrp, v.mpg2008
+    
+    FROM rae_public AS r
+    JOIN municipality AS m on r.muni_id = m.muni_id
+    JOIN vehicle AS v ON r.vin_id = v.vin_id
+    JOIN model_year AS my ON v.year_id = my.year_id
+    JOIN make AS mk ON v.make_id = mk.make_id
+WHERE (q1_2010 = 1 OR q2_2010 = 1 OR q3_2010 = 1 OR q4_2010 = 1)
+    AND m.muni_name = 'BOSTON'
+
+    AND m.muni_name = 'BOSTON'
+    AND r.mi_per_day IS NOT NULL
+    AND r.mpg_adj IS NOT NULL
+    AND r.gal_perday IS NOT NULL
+    AND r.co2eqv_day IS NOT NULL
+    AND v.curbwt IS NOT NULL
+    AND v.msrp IS NOT NULL 
+    AND v.mpg2008 IS NOT NULL
+    AND r.veh_zip IN (
+		'02113', '02114', '02108', '02109', '02110', 
+		'02111', '02115', '02118', '02116', '02119', 
+		'02120', '02121', '02122', '02215', '02124', 
+		'02125', '02127', '02128', '02163', '02199', 
+		'02210')
+	
+	--ORDER BY RANDOM() LIMIT 1000
+-->
+
+<!--
+    To find min/max of measures columns:
+                select --record_id,
+                    --r.mi_per_day, r.mpg_adj, r.gal_perday, r.co2eqv_day, v.curbwt, v.msrp, v.mpg2008
+                    min(r.mi_per_day), max(r.mi_per_day),
+                    min(r.mpg_adj), max(r.mpg_adj),
+                    min(r.gal_perday), max(r.gal_perday),
+                    min(r.co2eqv_day), max(r.co2eqv_day),
+                    min(v.curbwt), max(v.curbwt),
+                    min(v.msrp), max(v.msrp),
+                    min(v.mpg2008), max(v.mpg2008)
+					min(r.veh_zip), max(r.veh_zip)
+                    FROM rae_public AS r
+                    JOIN municipality AS m on r.muni_id = m.muni_id
+                    JOIN vehicle AS v ON r.vin_id = v.vin_id
+                    JOIN model_year AS my ON v.year_id = my.year_id
+                    JOIN make AS mk ON v.make_id = mk.make_id
+                WHERE (q1_2010 = 1 OR q2_2010 = 1 OR q3_2010 = 1 OR q4_2010 = 1)
+                    AND m.muni_name = 'BOSTON'
+-->
+
+<body>
+
+<!--<h2>Dataset: muni_name=BOSTON; q1_2010=1; q2_2010=1; q3_2010=1; q4_2010=1</h2>
+<hr />
+-->
+<h3 align="center" >Boston Car Data Explorer</h3>
+
+<p>How does your driving compare to that of other people in your neighborhood? Did the car use in your zip code change between 2008 and 2011? How does driving in your zip code compare to that in other zip codes in Boston? The Boston Car Explorer lets you explore these questions and more.</p>
+<p>Select a year to get started. This will randomly select 1,000 records from that year. To look at the data for only one zip code, click on the map.</p>
+<p>You will see these graphs: (alternatively, we could put these blurbs above each graph)
+  <ul>
+    <li>Vehicle mileage (mpg_adj_ave) compared to miles traveled per day: How efficient is your car compared to other cars?</li>
+    <li>What kind of vehicle (veh_type) dominates?</li>
+    <li>How many hybrid cars are registered?</li>
+    <li>What types of fuel are being used?</li>
+    <li>How old are most cars?</li>
+    <li>Which car makes are most popular?</li>
+  </ul>
+</p>
+
+<p><select id="year_select" onchange="reloadPage(this);" ><option selected >2008</option><option>2009</option><option>2010</option><option>2011</option></select></p>
+
+<table align="center" ><tr align="center" ><td align="center" >
+<div id="mainBubbleBarChartDiv" class="dc-chart"  >
+    <strong>Cars Measures [color: mi_per_day_ave; radius: gal_perday_ave]</strong> 
+        <span class="filterLabel">Current filter: 
+            <a class="reset" href="javascript:mainBubbleBarChart.filterAll();dc.redrawAll();" style="display: none;"> (reset) </a>
+            <span class="filter"></span>
+            <div class="clearfix"></div>
+        </span>
+</div>
+</td></tr></table>
+<hr />
+
+<div class="dc-data-count" style="float:left">
+    <span class="filterHeader">Car Filters:</span>
+    <span class="filter-count"></span> selected out of <span class="total-count"></span> random records 
+    <a href="javascript:dc.filterAll(); dc.renderAll(); clearAllSelectedMapLayers();">Reset All</a>
+</div>
+<br style="clear:left;" />
+<br>
+
+<table align="center" > 
+
+
+
+
+<tr align="center" >
+<td>
+<!-- The zip code bar chart is hidden -->
+<div id="zipcodeBarChartDiv" class="dc-chart" style="display: none;"  align="center" >
+    <strong>Cars by zip code</strong> 
+        <span class="filterLabel">Current filter: 
+            <a class="reset" href="javascript:zipcodeBarChart.filterAll();dc.redrawAll();" style="display: none;"> (reset) </a>
+            <span class="filter"></span>
+            <div class="clearfix"></div>
+        </span>
+</div>
+
+<div id="vehTypeBarChartDiv" class="dc-chart" align="center" >
+    <strong>Cars by veh_type</strong> 
+        <span class="filterLabel">Current filter: 
+            <a class="reset" href="javascript:vehTypeBarChart.filterAll();dc.redrawAll();" style="display: none;"> (reset) </a>
+            <span class="filter"></span>
+            <div class="clearfix"></div>
+        </span>
+</div>
+</td>
+
+<td rowspan="3"  align="center" >
+<div style="float:right" >
+	Click map to filter by zip codes
+	<p id="map">
+</div>
+</td>
+</tr>
+
+
+<tr align="center" >
+<td align="center" >
+<div id="hybridBarChartDiv" class="dc-chart" align="center" >
+    <strong>Cars by hybrid</strong> 
+        <span class="filterLabel">Current filter: 
+            <a class="reset" href="javascript:hybridBarChart.filterAll();dc.redrawAll();" style="display: none;"> (reset) </a>
+            <span class="filter"></span>
+            <div class="clearfix"></div>
+        </span>
+</div>
+</td>
+</tr>
+
+
+<tr align="center" >
+<td align="center" >
+<div id="fuelBarChartDiv" class="dc-chart" align="center" >
+    <strong>Cars by fuel</strong> 
+        <span class="filterLabel">Current filter: 
+            <a class="reset" href="javascript:fuelBarChart.filterAll();dc.redrawAll();" style="display: none;"> (reset) </a>
+            <span class="filter"></span>
+            <div class="clearfix"></div>
+        </span>
+</div>
+</td>
+</tr>
+
+
+<tr align="center" ><td colspan="2" align="center" >
+<div id="yearRangeSelectorBarChartDiv" class="dc-chart" align="center" >
+    <strong>Cars by model year</strong> 
+        <span class="filterLabel">Current filter: 
+            <a class="reset" href="javascript:yearRangeSelectorBarChart.filterAll();dc.redrawAll();" style="display: none;"> (reset) </a>
+            <span class="filter"></span>
+            <div class="clearfix"></div>
+        </span>
+</div>
+</td></tr>
+
+<tr align="center" ><td colspan="2" align="center" >
+<div id="makeNameBarChartDiv" class="dc-chart" align="center" >
+    <strong>Cars by make_name</strong> 
+        <span class="filterLabel">Current filter: 
+            <a class="reset" href="javascript:makeNameBarChart.filterAll();dc.redrawAll();" style="display: none;"> (reset) </a>
+            <span class="filter"></span>
+            <div class="clearfix"></div>
+        </span>
+</div>
+</td></tr>
+</table>
+
+<h3>Making of the Boston Car Data Explorer</h3>
+<p>One investigation we conducted was to focus on a popular subset of data -- 21 zipcodes within just the Boston municipality. This provided a more manageable dataset with which to visually explore intersections of many filters using multi-dimensional charting. Household income demographic data was incorporated as as a new filter. The resulting highly interactive "Boston Car Data Explorer" web page provides a sense of the variety of interacting factors, and can be extended to explore data for all of Massachusetts at the grid cell to county level. A next step in this effort would be to employ data analytics to identify alternative data sources for filters and measures, along with incorporating additional external data sources.</p>
+
+<script type="text/javascript">
+
+	// First set up zip code map...
+	
+		var width = 600;
+		var height = 520;
+		var commaformat = d3.format("0,000");
+		var hexformat = d3.format("06X");
+		var layersByZipcode = {};
+		var currentlySelectedMapLayersByZipcode = {};
+
+		var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+		var osmAttrib='Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors';
+		var map = L.map('map').setView([42.334565,-71.035459], 12);
+		L.tileLayer(osmUrl, {attribution: osmAttrib}).addTo(map);
+		var zipinfo = L.control();
+		var geojson_tj;
+		
+		// From http://en.wikipedia.org/wiki/Boston,_ma#Demographic_breakdown_by_zip_code
+		//Rank,ZIP_Code_ZCTA,Zip_Code_Name,Per_capita_Income,Median_household_income,Median_family_income,Population,Number_of_households
+		// 1,02110,Financial District,152007,123795,196518,1486,981
+		d3.csv("data/boston_zipcodes.csv", function(data) {
+			var max_income = d3.max(data, function(d) { return +d.Per_capita_Income; });
+			//Per_capita_Income: MIN=17390 MAX=152007
+			
+			//Load in GeoJSON data
+			/*
+			{
+				"type":"Topology",
+				"objects":
+					{"boston_zipcodes_WGS84":
+						{"type":"GeometryCollection",
+						"geometries":
+							[{"type":"MultiPolygon",
+							"properties":
+								{"objectid":547,
+								"zip":"02113",
+								"po_name":"Boston",
+								"state":"MA",
+								"sumblkpop":6009,
+								"pop2010":6773,
+								"pop10_sqmi":61572.7,
+								"sqmi":0.11,
+								"st_area_sh":278249.711404,
+								"st_length_":3429.731336},
+							"arcs":[[[-1,-2,-3,-4,-5,-6]],[[-7]],[[-8]]]
+							},
+							{"type":"MultiPolygon",
+							"properties":
+								{"objectid":548,
+								"zip":"02114",
+								"po_name":"Boston",
+								"state":"MA",
+								"sumblkpop":11044,
+								"pop2010":12012,
+								"pop10_sqmi":21073.7,
+								"sqmi":0.57,
+								"st_area_sh":1463776.64398,
+								"st_length_":7883.851259},
+							"arcs":[[[-9,2,-10,-11,-12]],[[-13]],[[-14,-15]],[[-16]],[[-17]]]
+							},
+			*/
+			var feature;			
+			d3.json("topojson/boston_zipcodes_WGS84_topojson.json", function(error, json) {
+				//Merge the data and GeoJSON
+				for (var i = 0; i < data.length; i++) {
+					//Find the corresponding zip code inside the GeoJSON
+					for (var j = 0; j < json.objects.boston_zipcodes_WGS84.geometries.length; j++) {
+						//Copy the wikipedia-based demographic data values into the JSON
+						var jsonZipcode = json.objects.boston_zipcodes_WGS84.geometries[j].properties.zip;
+						if (data[i].ZIP_Code_ZCTA == jsonZipcode) {
+							var json_properties = json.objects.boston_zipcodes_WGS84.geometries[j].properties;
+							
+							json.objects.boston_zipcodes_WGS84.geometries[j].properties = { 
+							"objectid": json_properties.objectid,
+							"zip": json_properties.zip, 
+							"po_name": json_properties.po_name,
+							"state": json_properties.state,
+							"sumblkpop": json_properties.sumblkpop,
+							"pop2010": json_properties.pop2010,
+							"pop10_sqmi": json_properties.pop10_sqmi,
+							"sqmi": json_properties.sqmi,
+							"st_area_sh": json_properties.st_area_sh,
+							"st_length_": json_properties.st_length_,
+							"wikipedia_Rank": data[i].Rank,
+							"wikipedia_ZIP_Code_ZCTA": data[i].ZIP_Code_ZCTA,
+							"wikipedia_Zip_Code_Name": data[i].Zip_Code_Name,
+							"wikipedia_Per_capita_Income": data[i].Per_capita_Income,
+							"wikipedia_Median_household_income": data[i].Median_household_income,
+							"wikipedia_Median_family_income": data[i].Median_family_income,
+							"wikipedia_Population": data[i].Population,
+							"wikipedia_Number_of_households": data[i].Number_of_households
+							};					
+							break;
+						}
+					}						
+				}
+
+				geojson_tj = L.geoJson([topojson.feature(json, json.objects.boston_zipcodes_WGS84)], {
+					onEachFeature: onEachFeature,
+					style: featureStyle
+				}).addTo(map);
+				
+				//overlays["geojson_topojson"] = geojson_tj;
+				//var control = L.control.layers(baseLayers, overlays).addTo(map);
+				//var bounds = d3.geo.bounds(topojson.feature(json, json.objects.boston_zipcodes_WGS84)); 
+				
+				zipinfo.setPosition('bottomright');
+				zipinfo.onAdd = function (map) {
+					this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+					this.update();
+					return this._div;
+				};
+
+				// Control to hold a table of information about the moused-over zipcode
+				zipinfo.update = function (props) {	
+					// Don't let mouseovers change the current zipinfo data if something 
+					// has been selected.
+					if (currentlySelectedMapLayersByZipcode.length > 0) return;
+					
+					this._div.innerHTML = (props ?
+					'<table align="left" >'+
+
+					'<tr><td width="90"><b>Zip Code:</b></td><td><b>'+ props.zip +'</b></td></tr>' +
+					'<tr><td colspan=2>&nbsp;'+ props.wikipedia_Zip_Code_Name +'</td></tr>' +
+					//'<tr><td><b>Population(2010):</b></td><td><b>'+ commaformat(props.pop2010) +'</b></td></tr>' +
+					'<tr><td><b>Population:</b></td><td><b>'+ commaformat(props.wikipedia_Population) +'</b></td></tr>' +
+					'<tr><td><b>sqmi:</b></td><td><b>'+ commaformat(props.sqmi) +'</b></td></tr>' +
+					'<tr><td><b>Per Capita Inc.:</b></td><td><b>$'+ commaformat(props.wikipedia_Per_capita_Income) + ' ('+commaformat(props.wikipedia_Rank) +' of 30)</b></td></tr>' +
+					'<tr><td><b>Household Inc.:</b></td><td><b>$'+ commaformat(props.wikipedia_Median_household_income) +' (median)</b></td></tr>' +
+					
+					'<tr><td><b># Households:</b></td><td><b>'+ commaformat(props.wikipedia_Number_of_households) +'</b></td></tr>' +
+
+					'</table>'
+					: 'Hover over a zip code region');
+				};
+
+				zipinfo.addTo(map);
+				
+				function getColor(wikipedia_Per_capita_Income) {						
+					var colr = 
+						wikipedia_Per_capita_Income > 140000 ? '#800026' :
+						wikipedia_Per_capita_Income > 120000 ? '#BD0026' :
+						wikipedia_Per_capita_Income > 100000 ? '#E31A1C' :
+						wikipedia_Per_capita_Income >  80000 ? '#FC4E2A' :
+						wikipedia_Per_capita_Income >  60000 ? '#FD8D3C' :
+						wikipedia_Per_capita_Income >  40000 ? '#FEB24C' :
+						wikipedia_Per_capita_Income >  20000 ? '#FED976' :
+							'#FFEDA0';
+					return colr;
+				}
+				
+				// Add legend 
+				var legend = L.control({position: 'topright'});
+
+				legend.onAdd = function (map) {
+
+					var div = L.DomUtil.create('div', 'info legend'),
+						incomes = [0, 20000, 40000, 60000, 80000, 100000, 120000, 140000],
+						labels = [];
+
+					div.innerHTML += '<h3>Per capita income</h3>';
+					// generate a label with a colored square for each interval
+					for (var i = 0; i < incomes.length; i++) {
+						div.innerHTML +=
+							'<i style="background:' + getColor(incomes[i] + 1) + '"></i> ' +
+							'$'+commaformat(incomes[i]) + (incomes[i + 1] ? '&ndash; $' + commaformat(incomes[i + 1]) + '<br>' : '+');
+					}
+
+					return div;
+				};
+
+				legend.addTo(map);					
+			
+				
+				function featureStyle(feature) {						
+					return {							
+						fillColor: getColor(+feature.properties.wikipedia_Per_capita_Income),
+						weight: 2,
+						opacity: 1,
+						//color: 'white',
+						dashArray: '3',
+						fillOpacity: 0.7
+					};
+				}
+				
+				function onEachFeature(feature, layer) {
+					//var popup = L.popup()
+					//	.setLatLng(layer.getBounds().getCenter());
+					//	.setContent(feature.properties);
+					//	//.openOn(map);
+					//console.log(feature.properties);
+					//layer.bindPopup(popup);
+					//console.log(feature.properties.zip);
+					layersByZipcode[feature.properties.zip] = layer;
+					layer.on({
+						mouseover: highlightFeature,
+						mouseout: resetHighlight,
+						dblclick: zoomToFeature,
+						click: featureClicked
+					});
+				}
+				
+				function highlightFeature(e) {
+					var layer = e.target;
+					zipinfo.update(layer.feature.properties);
+					
+					//layer.openPopup();
+					//layer.setStyle({
+					//	weight: 5,
+					//	color: '#666',
+					//	dashArray: '',
+					//	fillOpacity: 0.7
+					//});
+					//if (!L.Browser.ie && !L.Browser.opera) {
+					//	layer.bringToFront();
+					//}
+				}
+				
+				function resetHighlight(e) {
+					;//geojson_tj.resetStyle(e.target);
+				}
+				
+				function zoomToFeature(e) {
+					map.fitBounds(e.target.getBounds());
+				}
+
+				function featureClicked(e) {
+					var layer = e.target;
+					
+					// update the leaflet map
+					layerClicked(layer);	
+	
+					// Update the dc zipcode chart
+					zipcodeBarChart.filterAll(); 
+					for (var zipcode in currentlySelectedMapLayersByZipcode) {
+						//zipcodeBarChart.filter(layer.feature.properties.zip); 
+						zipcodeBarChart.filter(zipcode); 
+					}
+					dc.redrawAll();				
+				}
+				
+			});
+		});
+				// Called on click to leaflet map layer OR via click to dc zipcode bar chart.
+				function layerClicked(layer) {
+					var zipcode = layer.feature.properties.zip;
+					if (zipcode in currentlySelectedMapLayersByZipcode) {
+						geojson_tj.resetStyle(currentlySelectedMapLayersByZipcode[zipcode]);
+						delete currentlySelectedMapLayersByZipcode[zipcode];
+						console.log(currentlySelectedMapLayersByZipcode);
+						return;
+					}						
+					if (currentlySelectedMapLayersByZipcode[zipcode] != null) geojson_tj.resetStyle(currentlySelectedMapLayersByZipcode[zipcode]);
+					//currentlySelectedMapLayersByZipcode = null;
+					zipinfo.update(layer.feature.properties);
+					layer.setStyle({
+						fillColor: '#00f',
+						fillOpacity: 1.0
+					});
+					currentlySelectedMapLayersByZipcode[zipcode] = layer;
+					console.log(currentlySelectedMapLayersByZipcode);
+				}
+				
+				function clearAllSelectedMapLayers() {
+					for (var zipcode in currentlySelectedMapLayersByZipcode) {
+						geojson_tj.resetStyle(currentlySelectedMapLayersByZipcode[zipcode]);
+						delete currentlySelectedMapLayersByZipcode[zipcode];
+						console.log(currentlySelectedMapLayersByZipcode);
+					}					
+				}
+		
+		
+	// Now handle charts...
+    var yAxis = d3.svg.axis()
+        .tickFormat(d3.format("s"))
+        .orient("left");
+    var xAxisFormatS = d3.svg.axis()
+        .tickFormat(d3.format("s"));
+	var xAxis = d3.svg.axis();
+		
+	var xAxisFormat4d = d3.svg.axis()
+        .tickFormat(d3.format("4d"));
+
+	
+	// Grab year from dropdown, first
+	var selyear = document.getElementById('year_select');
+	var csv_year = selyear.options[selyear.selectedIndex].text;
+	// Then check to see if there is a query parameter to override the year
+	var params = window.location.search.split("&");	
+	for (var i=0; i<params.length; i++) {
+		var parts = params[i].split("=");
+		if (parts[0] == "year" || parts[0] == "?year") {
+			csv_year = parts[1];
+			document.getElementById('year_select').value = csv_year;
+			break;
+		}
+	}
+
+	//d3.csv('data/boston_2008_car_data_1000_random_rows.csv', function(data){	
+	d3.csv('data/boston_'+ csv_year +'_car_data_1000_random_rows.csv', function(data){	
+        var cars = crossfilter(data);
+        var all = cars.groupAll();
+
+        var mi_per_dayDimension = cars.dimension(function(d){
+            return d.mi_per_day ? +d.mi_per_day : 0;
+        });
+        var mi_per_dayGroup = mi_per_dayDimension.group().reduce(
+            // callback when data is added 
+            function (p,v) {
+                ++p.count;
+                p.mi_per_day_sum += v.mi_per_day ? +v.mi_per_day : 0;
+                p.mpg_adj_sum += v.mpg_adj ? +v.mpg_adj : 0;
+                p.gal_perday_sum += v.gal_perday ? +v.gal_perday : 0;
+                p.co2eqv_day_sum += v.co2eqv_day ? +v.co2eqv_day: 0;
+                p.curbwt_sum += v.curbwt ? +v.curbwt : 0;
+                p.msrp_sum += v.msrp ? +v.msrp : 0;
+                p.mpg2008_sum += v.mpg2008 ? +v.mpg2008 : 0;
+
+                if (p.count == 0) {
+                    p.mi_per_day_ave = 0;
+                    p.mpg_adj_ave = 0;
+                    p.gal_perday_ave = 0;
+                    p.co2eqv_day_ave = 0;
+                    p.curbwt_ave = 0;
+                    p.msrp_ave = 0;
+                    p.mpg2008_ave = 0;
+                    return p;
+                }
+                p.mi_per_day_ave = p.mi_per_day_sum / p.count;
+                p.mpg_adj_ave = p.mpg_adj_sum / p.count;
+                p.gal_perday_ave = p.gal_perday_sum / p.count;
+                p.co2eqv_day_ave = p.co2eqv_day_sum / p.count;
+                p.curbwt_ave = p.curbwt_sum / p.count;
+                p.msrp_ave = p.msrp_sum / p.count;
+                p.mpg2008_ave = p.mpg2008_sum / p.count;
+				p.veh_zip = v.veh_zip;
+				
+				p.muni_name = v.muni_name;
+				p.veh_zip = v.veh_zip;
+				p.hybrid = v.hybrid;
+				p.year = v.year;
+				p.veh_type = v.veh_type;
+				p.fuel = v.fuel;
+				p.make_name = v.make_name;			
+                return p;
+            },
+            // callback when data is removed from current filter results
+            function (p,v) {
+                --p.count;
+                p.mi_per_day_sum -= v.mi_per_day;
+                p.mpg_adj_sum -= v.mpg_adj;
+                p.gal_perday_sum -= v.gal_perday;
+                p.co2eqv_day_sum -= v.co2eqv_day;
+                p.curbwt_sum -= v.curbwt;
+                p.msrp_sum -= v.msrp;
+                p.mpg2008_sum -= v.mpg2008;
+
+                if (p.count == 0) {
+                    p.mi_per_day_ave = 0;
+                    p.mpg_adj_ave = 0;
+                    p.gal_perday_ave = 0;
+                    p.co2eqv_day_ave = 0;
+                    p.curbwt_ave = 0;
+                    p.msrp_ave = 0;
+                    p.mpg2008_ave = 0;
+                    return p;
+                }
+                p.mi_per_day_ave = p.mi_per_day_sum / p.count;
+                p.mpg_adj_ave = p.mpg_adj_sum / p.count;
+                p.gal_perday_ave = p.gal_perday_sum / p.count;
+                p.co2eqv_day_ave = p.co2eqv_day_sum / p.count;
+                p.curbwt_ave = p.curbwt_sum / p.count;
+                p.msrp_ave = p.msrp_sum / p.count;
+                p.mpg2008_ave = p.mpg2008_sum / p.count;
+                return p;
+            },
+            // initialize p 
+            function (p) {
+                return {count: 0, mi_per_day_sum: 0, mpg_adj_sum: 0, gal_perday_sum: 0, co2eqv_day_sum: 0, curbwt_sum: 0, msrp_sum: 0, mpg2008_sum: 0,
+                    mi_per_day_ave:0, mpg_adj_ave: 0, gal_perday_ave: 0, co2eqv_day_ave: 0, curbwt_ave: 0, msrp_ave: 0, mpg2008_ave: 0
+                };
+            }
+        );
+
+
+		var mi_per_day_max = d3.max(data, function(d) { return +d.mi_per_day; });
+		var mpg_adj_max = d3.max(data, function(d) { return +d.mpg_adj; });
+		var gal_perday_max = d3.max(data, function(d) { return +d.gal_perday; });
+		
+        mainBubbleBarChart = dc.bubbleChart("#mainBubbleBarChartDiv")
+                .width(990)
+                .height(300)
+                .transitionDuration(1500)
+                .dimension(mi_per_dayDimension)
+                .group(mi_per_dayGroup)
+
+                .colors(colorbrewer.RdYlGn[8])
+                .colorDomain([0,mi_per_day_max])
+
+                // Some sample measures to work with:
+                // mi_per_day [0,648.51]
+                // mpg_adj [5.66,48.00]
+                // gal_perday [0.00,1756.38]
+                // co2eqv_day [0.00,15905.49]
+                // curbwt [1400,8300]
+                // msrp [0,194000]
+                // mpg2008 [8,57]
+
+                .keyAccessor(function (d) {
+                    return +d.value.mi_per_day_ave;
+                })
+                .valueAccessor(function (p) {
+                    return +p.value.mpg_adj_ave;
+                })
+                .radiusValueAccessor(function (p) {
+                    return +p.value.gal_perday_ave;
+                })
+                .colorAccessor(function (p) {
+                    return +p.value.mi_per_day_ave;
+                })
+                .maxBubbleRelativeSize(0.3) 
+                //.x(d3.scale.linear().domain([0,650])) 
+				//.y(d3.scale.linear().domain([0, 50])) 
+				//.r(d3.scale.linear().domain([0, 1757])) 
+				.x(d3.scale.linear().domain([0, mi_per_day_max])) 				
+                .y(d3.scale.linear().domain([0, mpg_adj_max])) 
+                .r(d3.scale.linear().domain([0, gal_perday_max*10])) 
+                .elasticY(true)
+                .elasticX(true)
+                .renderHorizontalGridLines(true)
+                .renderVerticalGridLines(true)
+                .xAxisLabel('mi_per_day_ave')
+                .yAxisLabel('mpg_adj_ave')
+                .renderLabel(false)
+                .label(function (p) {
+                    return p.key;
+                })
+                .renderTitle(true)
+                .title(function (p) {
+                    return [
+                        "count: "+p.value.count,
+                        "mi_per_day_ave: " + p.value.mi_per_day_ave,
+                        "mgp_adj_ave: " + p.value.mpg_adj_ave,
+                        "gal_perday_ave: " + p.value.gal_perday_ave,
+                        "co2eqv_day_ave: "+p.value.co2eqv_day_ave,
+                        "curbwt_ave: "+p.value.curbwt_ave,
+                        "mspr_ave: "+p.value.msrp_ave,
+                        "mpg2008_ave: " + p.value.mpg2008_ave,
+						"municipality: " + p.value.muni_name,
+						"veh_zipcode: " + p.value.veh_zip,
+						"hybrid: " + p.value.hybrid,
+						"model_year: " + p.value.year,
+						"veh_type: " + p.value.veh_type,
+						"fuel: " + p.value.fuel,
+						"make: " + p.value.make_name]
+						.join("\n")
+						;
+                })
+                .xAxis(xAxisFormatS)
+                .yAxis(yAxis)
+                ;        
+
+
+        var hybrid = cars.dimension(function(d){
+            return (d.hybrid == "0" ? "non-hybrid" : "hybrid");
+        });
+        var countByHybrid = hybrid.group();
+        hybridBarChart = dc.barChart("#hybridBarChartDiv")
+                .width(250)
+                .height(150)
+                .dimension(hybrid)
+                .group(countByHybrid)
+                .x(d3.scale.ordinal().domain(hybrid))
+                .xUnits(dc.units.ordinal)
+                .elasticY(true)
+                .centerBar(true)
+                .yAxis(yAxis)
+                .margins({top: 10, right: 50, bottom: 30, left: 40})
+                .turnOnControls(true)
+                .brushOn(true)
+                ;
+				
+        var year = cars.dimension(function(d){
+            return +d.year;
+        });  
+        var countByYearGroup = year.group();
+
+        //var countByYearGroup = year.group().reduceCount( 
+        //    function(d) { 
+        //        return d.year;
+        //});				
+        yearRangeSelectorBarChart = dc.barChart("#yearRangeSelectorBarChartDiv")
+                .width(990)
+                .height(150)
+                .dimension(year)
+                .group(countByYearGroup)
+				.x(d3.scale.ordinal().domain(year))
+                .xUnits(dc.units.ordinal)
+                .elasticY(true)
+                .centerBar(true)
+                .yAxis(yAxis)
+                .margins({top: 10, right: 50, bottom: 30, left: 40})
+
+
+		/*
+        yearBarChart = dc.barChart("#yearBarChartDiv")
+                .width(990)
+                .height(150)
+                .dimension(year)
+                //.x(d3.scale.ordinal().domain(countByYear))
+                //.xUnits(dc.units.ordinal)
+                //.xAxis(xAxisTicks5)
+                .elasticY(true)
+                .centerBar(true)
+                .yAxis(yAxis)
+                //.margins({top: 10, right: 50, bottom: 30, left: 40})
+                //.turnOnControls(true)
+                //.brushOn(true)
+                .mouseZoomable(true)
+                .rangeChart(yearRangeSelectorBarChart)
+                .brushOn(false)
+
+                .x(d3.time.scale().domain([new Date(1990, 0, 1), new Date(2011, 11, 31)]))
+                //.round(d3.time.year.round)
+                //.alwaysUseRounding(true)
+                //.xUnits(d3.time.years);
+
+                //.group(countByYearGroup)
+                .group(countByYearGroup, "countByYear")
+                .valueAccessor(function (d) {
+                    //console.log("d.value="+d.value);
+                    return d.value;
+                })
+                ;
+        */
+				
+        var vehType = cars.dimension(function(d){
+            return d.veh_type;
+        });
+        var countByVehType = vehType.group();
+        vehTypeBarChart = dc.barChart("#vehTypeBarChartDiv")
+                .width(400)
+                .height(150)
+                .dimension(vehType)
+                .group(countByVehType)
+                .x(d3.scale.ordinal().domain(vehType))
+                .xUnits(dc.units.ordinal)
+                .elasticY(true)
+                .centerBar(true)
+                .yAxis(yAxis)
+                .margins({top: 10, right: 50, bottom: 30, left: 40})
+                .turnOnControls(true)
+                .brushOn(true)
+                ;
+
+
+        var fuel = cars.dimension(function(d){
+            return d.fuel;
+        });
+        var countByFuel = fuel.group();
+        fuelBarChart = dc.barChart("#fuelBarChartDiv")
+                .width(400)
+                .height(150)
+                .dimension(fuel)
+                .group(countByFuel)
+                .x(d3.scale.ordinal().domain(fuel))
+                .xUnits(dc.units.ordinal)
+                .elasticY(true)
+                .centerBar(true)
+                .yAxis(yAxis)
+                .margins({top: 10, right: 50, bottom: 30, left: 40})
+                .turnOnControls(true)
+                .brushOn(true)
+
+                ;
+				
+		
+        var makeName = cars.dimension(function(d){
+            return d.make_name;
+        });
+        var countByMakeName = makeName.group();
+        makeNameBarChart = dc.barChart("#makeNameBarChartDiv")
+                .width(1000)
+                .height(200)
+                .dimension(makeName)
+                .group(countByMakeName)
+                .x(d3.scale.ordinal().domain(makeName))
+                .xUnits(dc.units.ordinal)
+                .elasticY(true)
+                .centerBar(true)
+                .yAxis(yAxis)
+                .margins({top: 10, right: 50, bottom: 60, left: 40})
+                //.turnOnControls(true)
+                //.brushOn(true)
+                .xAxis(xAxis)
+
+                ;		
+		makeNameBarChart.on("postRender", function(c) {rotateBarChartLabels('#makeNameBarChartDiv');} );
+
+		
+		
+		var zipcode = cars.dimension(function(d){
+            return d.veh_zip;
+        });  
+        //var countByZipcodeGroup = zipcode.group();	
+        var countByZipcodeGroup = zipcode.group().reduceCount( 
+            function(d) { 
+                return d.veh_zip;
+        });		
+        zipcodeBarChart = dc.barChart("#zipcodeBarChartDiv")
+                .width(400)
+                .height(150)
+                .dimension(zipcode)
+                .group(countByZipcodeGroup)
+				.x(d3.scale.ordinal().domain(zipcode))
+                .xUnits(dc.units.ordinal)
+                .elasticY(true)
+                .centerBar(true)
+                .yAxis(yAxis)
+				.margins({top: 10, right: 50, bottom: 60, left: 40})
+				/*
+				.on("postRedraw", function(chart){
+					// Zipcodes bar chart was clicked -- must sync with leaflet map
+					
+					// chart.filters() is list of active filters. eg. ['01234', '02468']
+					
+					var activeMapFilters = {};
+					//for (var i=0; i<chart.filters().length; i++) {
+					//	var zipcodeActiveInMap = chart.filters()[i];
+					//	activeMapFilters[zipcodeActiveInMap] = 
+					
+					var currentlySelectedBarChartZipcodes = chart.filters();					
+					//var zipcodeActiveInMap = chart.filters()[i];
+					
+					
+					// Loop over each zipcode and see if it's active in map &/or bar chart
+					
+					for (var zipcode in layersByZipcode) {
+						var layer = layersByZipcode[zipcode];
+						if (zipcode in currentlySelectedBarChartZipcodes) {
+							if (zipcode in currentlySelectedMapLayersByZipcode) {
+								; // Okay -- already selected in both map and chart
+							} else {
+								// select it in the leaflet map
+								layerClicked(layer);
+							}
+						} else {
+							// zipcode is not (or no longer) selected in bar chart
+							if (zipcode in currentlySelectedMapLayersByZipcode) {
+								// de-select it in the leaflet map
+								layerClicked(layer);
+							} else {
+								// Okay - already not selected in either map or chart
+							}
+						}
+					}					
+				})
+				*/
+				;
+		zipcodeBarChart.on("postRender", function(c) {rotateBarChartLabels('#zipcodeBarChartDiv');} );
+				
+
+        dc.dataCount(".dc-data-count")
+            .dimension(cars)
+            .group(all);
+
+        dc.renderAll();
+    });
+	
+	function rotateBarChartLabels(elementName) { 
+		//d3.selectAll('#makeNameBarChartDiv .axis.x text') 
+		d3.selectAll(elementName + ' .axis.x text') 
+		.style("text-anchor", "end")
+		.attr("dx", "-.8em")
+		.attr("dy", ".15em")
+		.attr("transform", function(d) {
+			return "rotate(-65)" 
+		});
+	};
+</script>
+
+</body>
+
+</html>

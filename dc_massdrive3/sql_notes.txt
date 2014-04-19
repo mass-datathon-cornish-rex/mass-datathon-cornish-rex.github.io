@@ -1,0 +1,65 @@
+
+select record_id,
+    -- DIMENSIONS
+    m.muni_name, v.hybrid, v.veh_type, v.fuel, my.year, mk.make_name, 
+    r.q1_2010, r.q2_2010, r.q3_2010, r.q4_2010,
+    -- MEASURES
+    r.mi_per_day, r.mpg_adj, r.gal_perday, r.co2eqv_day, v.curbwt, v.msrp, v.mpg2008, r.veh_zip
+    
+    FROM rae_public AS r
+    JOIN municipality AS m on r.muni_id = m.muni_id
+    JOIN vehicle AS v ON r.vin_id = v.vin_id
+    JOIN model_year AS my ON v.year_id = my.year_id
+    JOIN make AS mk ON v.make_id = mk.make_id
+WHERE (q1_2010 = 1 OR q2_2010 = 1 OR q3_2010 = 1 OR q4_2010 = 1)
+    AND m.muni_name = 'BOSTON'
+
+    AND m.muni_name = 'BOSTON'
+    AND r.mi_per_day IS NOT NULL
+    AND r.mpg_adj IS NOT NULL
+    AND r.gal_perday IS NOT NULL
+    AND r.co2eqv_day IS NOT NULL
+    AND v.curbwt IS NOT NULL
+    AND v.msrp IS NOT NULL 
+    AND v.mpg2008 IS NOT NULL
+    
+ORDER BY RANDOM() LIMIT 1000
+
+
+
+============================================================
+
+but since I'm using 1000 random rows, I should use Excel and find the min/max for the selected 1000 rows
+To find min/max of measures columns:
+
+select --record_id,
+                    
+		--r.mi_per_day, r.mpg_adj, r.gal_perday, r.co2eqv_day, v.curbwt, v.msrp, v.mpg2008
+                    			min(r.mi_per_day), max(r.mi_per_day),
+
+                    min(r.mpg_adj), max(r.mpg_adj),
+
+                    min(r.gal_perday), max(r.gal_perday),
+
+                    min(r.co2eqv_day), max(r.co2eqv_day),
+
+                    min(v.curbwt), max(v.curbwt),
+
+                    min(v.msrp), max(v.msrp),
+
+                    min(v.mpg2008), max(v.mpg2008)
+		min(r.veh_zip), max(r.veh_zip)
+
+                    FROM rae_public AS r
+
+                    JOIN municipality AS m on r.muni_id = m.muni_id
+
+                    JOIN vehicle AS v ON r.vin_id = v.vin_id
+
+                    JOIN model_year AS my ON v.year_id = my.year_id
+
+                    JOIN make AS mk ON v.make_id = mk.make_id
+
+                WHERE (q1_2010 = 1 OR q2_2010 = 1 OR q3_2010 = 1 OR q4_2010 = 1)
+
+                    AND m.muni_name = 'BOSTON'
