@@ -30,8 +30,8 @@
 			}
 		
 			#map {
-			  width: 1000px;
-			  height: 880px;
+			  width: 800px;
+			  height: 700px;
 			}
 
 			#mapcontainer {
@@ -64,17 +64,29 @@
 				margin-right: 8px;
 				opacity: 0.7;
 			}		
+
+			.detailedInfo {
+				font-size: 12px;
+				font-family: Arial, Helvetica, sans-serif;
+			}
+
 			.detailedInfo h2{
 				text-align: center;
-				font: 16px Arial, Helvetica, sans-serif;
+				font-size: 16px;
 				font-weight: bold;
 			}			
 			.detailedInfo h3{
-				font: 12px Arial, Helvetica, sans-serif;
+				font-size: 12px;
 				font-weight: bold;
 			}
 			.detailedInfo div{
-				font: 10px Arial, Helvetica, sans-serif;				
+				font-size: 10px;				
+			}
+			.detailedInfo .headerfootnote {
+				padding-left: 20px;
+				text-align: left;
+				font-size: 10px;
+				font-weight: lighter;
 			}
 		</style>
 	</head>
@@ -86,7 +98,8 @@
 			<p id="map">
 		</div>
 		<table class='detailedInfo'>
-			<tr><th><h2>Click on a region to view info<h2></th></tr>
+			<tr><th><h2>Top 1000 CO2-equivalent emissions<h2></th></tr>
+			<tr><td class='headerfootnote'>Click on a region to view info</td></tr>
 			<tr><th><h3>Average Vehicles Miles per Day</h3></th></tr>
 			<tr><td><canvas id="avgMilesPassVsComm"></canvas></td>
 				<td><div id="avgMilesPassVsCommDes"></div></td>
@@ -95,6 +108,15 @@
 			<tr><td><canvas id="numVehicles"></canvas></td>
 				<td><div id="numVehiclesDes"></div></td>
 			</tr>
+			<tr><td></td></tr>
+			<tr><td colspan='2'>			
+				Here are the regions with the highest CO2-equivalent emissions in kg/day. <br/>
+				<ul><li>Is there a correlation between
+				<ul><li>the ratio of passenger vehicles to commercial vehicles and</li>
+					<li>the ratio of respective miles traveled?</li>
+				</ul></li><li>
+				Is there a correlation between the number of vehicles per household and average miles traveled by passenger vehicles?</li></ul>
+			</td><tr>
 		</table>
 		<script type="text/javascript">
 			var width = 600;
@@ -190,7 +212,7 @@
 						var co2values = [0, 4000, 4200, 4400, 4600, 4800, 5000, 10000];		
 						var labels = [];
 
-						div.innerHTML += '<h3>CO2 Emmissions (kg)</h3>';						
+						div.innerHTML += '<h3>CO2 Emmissions (kg/day)</h3>';						
 						// generate a label with a colored square for each interval
 						for (var i = 0; i < co2values.length; i++) {
 							div.innerHTML +=								
