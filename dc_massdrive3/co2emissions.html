@@ -63,6 +63,11 @@
 				float: left;
 				margin-right: 8px;
 				opacity: 0.7;
+			}		
+			.detailedInfo h2{
+				text-align: center;
+				font: 16px Arial, Helvetica, sans-serif;
+				font-weight: bold;
 			}			
 			.detailedInfo h3{
 				font: 12px Arial, Helvetica, sans-serif;
@@ -78,10 +83,10 @@
 		<tr align="center" > 
 		<td rowspan="3"> -->
 		<div id='mapcontainer'>
-			Click on a square region to view info
 			<p id="map">
 		</div>
 		<table class='detailedInfo'>
+			<tr><th><h2>Click on a region to view info<h2></th></tr>
 			<tr><th><h3>Average Vehicles Miles per Day</h3></th></tr>
 			<tr><td><canvas id="avgMilesPassVsComm"></canvas></td>
 				<td><div id="avgMilesPassVsCommDes"></div></td>
