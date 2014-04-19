@@ -104,7 +104,7 @@
 
 			var osmUrl = 'http://a{s}.acetate.geoiq.com/tiles/acetate-hillshading/{z}/{x}/{y}.png';
 			var osmAttrib='&copy;2012 Esri & Stamen, Data from OSM and Natural Earth contributers';
-			var map = L.map('map').setView([42.334565,-71.035459], 12);
+			var map = L.map('map').setView([42.334565,-71.035459], 13);
 			L.tileLayer(osmUrl, {attribution: osmAttrib}).addTo(map);
 			
 			d3.json("co2emissions_top1000.geojson", function(data) {		
