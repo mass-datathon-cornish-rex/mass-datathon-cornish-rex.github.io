@@ -39,9 +39,9 @@
           <ul class="nav navbar-nav">
             <li class="active"><a href="#">Home</a></li>
             <li><a href="#impact">Who Impacts Whom?</a></li>
+            <li><a href="#car-data">Car Data Explorer</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#data-access">Data Access</a></li>
-            <li><a href="#demo-showcase">Demo Showcase</a></li>
             <li><a href="#contact">Contact</a></li>
           </ul>
         </div>
@@ -135,6 +135,29 @@ dbUnloadDriver(drv)<br/>
       </code>
 
       <div class="page-header">
+        <a name="about"></a><h1>Boston Car Data Explorer</h1>
+      </div>
+
+      <p>How does your driving compare to that of other people in your neighborhood? Did the car use in your zip code change between 2008 and 2011? How does driving in your zip code compare to that in other zip codes in Boston? The Boston Car Explorer lets you explore these questions and more. <a href="dc_massdrive3/dc_massdrive_BOSTON.html" target="_new">Click here to start the demo</a></p>
+
+      <p>You will see these graphs:</p>
+      <ul>
+        <li>Vehicle mileage (mpg_adj_ave) compared to miles traveled per day: How efficient is your car compared to other cars?</li>
+        <li>What kind of vehicle (veh_type) dominates?</li>
+        <li>How many hybrid cars are registered?</li>
+        <li>What types of fuel are being used?</li>
+        <li>How old are most cars?</li>
+        <li>Which car makes are most popular?</li>
+      </ul>
+
+      <p>One investigation we conducted was to focus on a popular subset of data -- 21 zipcodes within just the Boston municipality. This provided a more manageable dataset with which to visually explore intersections of many filters using multi-dimensional charting. Household income demographic data was incorporated as as a new filter. The resulting highly interactive "Boston Car Data Explorer" web page provides a sense of the variety of interacting factors, and can be extended to explore data for all of Massachusetts at the grid cell to county level. A next step in this effort would be to employ data analytics to identify alternative data sources for filters and measures, along with incorporating additional external data sources.</p>
+
+      <p class="text-center">
+        <a href="boston_car_data_explorer.png"><img src="boston_car_data_explorer.png" /></a>
+        <small>Click the image above to see full-size</small>
+      </p>
+
+      <div class="page-header">
         <a name="about"></a><h1>About</h1>
       </div>
 
@@ -221,16 +244,6 @@ sudo -u postgres createdb massdrivedata bunzip2 -c massdrivedata-1.0.sql.bz2 | s
       </div>
 
       <!--<p>Previous Releases</p>-->
-
-      <div class="page-header">
-        <a name="demo-showcase"></a><h1>Demo Showcase</h1>
-      </div>
-
-      <h3>Mileage Ratios</h3>
-      <p>
-        <img src="mileage_ratios.png" />
-        Allison provides content here.
-      </p>
 
       <div class="page-header">
         <a name="contact"></a><h1>Contact</h1>
